@@ -1,0 +1,87 @@
+---
+name: edesk
+description: Work with the eDesk helpdesk API via the `edesk` CLI — list/view/create/update/delete tickets, messages, sales orders, tracking links, order notes, tags, templates; search contacts; list channels/users. Use whenever the user asks about eDesk tickets, customer support queries, eDesk sales orders, or eDesk automation.
+---
+
+# eDesk CLI
+
+`edesk` is a gh-style CLI for the eDesk API. Auth is already configured if
+`edesk auth status` succeeds; otherwise ask the user to run `edesk auth login`
+(tokens come from https://dashboard.edesk.com/api-token) or set `EDESK_TOKEN`.
+
+## Ground rules
+
+- **Always pass `--json` or `--jq <expr>`** when consuming output programmatically.
+  Default output is a table (TTY) or TSV (piped).
+- Destructive commands (`* delete`, `tracking clear`) need `--yes` in scripts.
+  **Confirm with the user before deleting anything.**
+- Exit codes: 0 ok, 1 failure, 2 usage error, 4 auth problem (`edesk auth login`).
+- Lists default to 30 items; use `--all` (every page), `--limit N`, or `--page N --per-page M`.
+- `edesk <noun> --help` and `edesk <noun> <verb> --help` document every flag.
+
+## Command map
+
+```
+edesk whoami                                  # identity behind the token
+edesk ticket   list|view|create|update|update-data|delete
+edesk message  list --ticket <id> | view|create|update|delete
+edesk order    list|view|create|update|delete         # sales orders
+edesk tracking view|add|set|clear <ORDER_ID>          # tracking links
+edesk note     list|view|create|update|attach|delete  # order notes
+edesk tag      list|view|create|update|delete
+edesk tag-group list
+edesk template list|view|create|update|delete
+edesk contact  list [--query|--email|--name|--phone|--consumer-id]
+edesk channel  list
+edesk user     list
+edesk api <PATH> [-X METHOD] [-F k=v ...] [--body JSON|--body-file F] [--paginate]
+```
+
+## Recipes
+
+```bash
+# Open tickets updated today, as JSON ids
+edesk ticket list --status Open --updated-after $(date +%F) --jq '.[].id'
+
+# Everything about one ticket, including its messages
+edesk ticket view 12345 --json
+edesk message list --ticket 12345 --json
+
+# Internal note (NOT visible to the customer)
+edesk message create --ticket 12345 --type Note --body "..."
+
+# Real reply emailed to the customer — only when the user explicitly wants to send
+edesk message create --ticket 12345 --body "..." --direction Outgoing --send
+
+# Find a sales order by marketplace order id, then add tracking
+ORDER_ID=$(edesk order list --seller-order "406-1195395-1150767" --jq '.[0].id')
+edesk tracking add "$ORDER_ID" --link "https://carrier.example/track/XYZ" --carrier DHL
+
+# Create a sales order (wide JSON schema; ship_to is required in practice)
+edesk order create --body-file order.json
+# order.json needs: channel_id, seller_order_id (unique), currency, status,
+# shipping_amount, order_items[{sku,title,quantity,item_amount,shipping_amount}],
+# ship_to{name,line_1,city,country,postcode}, contact{email} or contact_id
+
+# Tag housekeeping (tags live inside a group)
+edesk tag-group list --json
+edesk tag create --name "VIP" --group 644646 --color 2196F3 --icon star
+edesk tag update <id> --color F44336        # partial: only what you pass changes
+
+# Custom fields on a ticket
+edesk ticket update-data 12345 -f "Order Status=Shipped"
+
+# Raw escape hatch for anything not covered
+edesk api /tickets -F filter_status_equals=Open -F itemsPerPage=50 --jq '.data'
+```
+
+## Quirks worth knowing
+
+- Ticket "delete" archives the ticket (status `Archived`); it does not remove it.
+- Tag update rejects re-sending the same name (must-be-unique validation) — only
+  pass the flags you want changed.
+- `note attach` uploads multipart; `--kind Invoice|Other` applies to the batch.
+- Newly created sales orders can take a moment to appear in `order list` filters
+  (search index lag); `order view <id>` is immediate.
+- There is no list-messages endpoint upstream; `message list --ticket` fans out
+  over the ticket's `messages_ids`.
