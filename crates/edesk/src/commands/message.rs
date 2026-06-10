@@ -159,7 +159,7 @@ pub async fn run(ctx: &Context, cmd: MessageCmd) -> Result<()> {
         MessageCmd::Delete { id, yes } => {
             util::confirm(&format!("delete message {id}"), yes)?;
             let resp = client.delete_message(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }

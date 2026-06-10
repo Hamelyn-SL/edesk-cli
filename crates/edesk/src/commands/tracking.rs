@@ -87,7 +87,7 @@ pub async fn run(ctx: &Context, cmd: TrackingCmd) -> Result<()> {
                 yes,
             )?;
             let resp = client.delete_tracking_links(order_id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }

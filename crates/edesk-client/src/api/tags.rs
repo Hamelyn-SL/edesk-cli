@@ -4,12 +4,19 @@ use crate::error::Result;
 use crate::types::{ApiResponse, Page};
 use crate::Client;
 
-/// Shared by create and update. The API uses full-replace PUT semantics, so
-/// `name` and `tag_group_id` are required even when updating other fields.
-#[derive(Debug, Clone, Serialize)]
+/// Shared by create and update.
+///
+/// The spec marks `name` and `tag_group_id` as required, but the live API
+/// treats PUT as a partial update AND rejects re-sending an unchanged `name`
+/// with validation code 4003 (must be unique) — verified empirically. So all
+/// fields are optional here; create-side requirements are enforced by the
+/// server (and by the CLI's required flags).
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct TagRequest {
-    pub name: String,
-    pub tag_group_id: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag_group_id: Option<i64>,
     /// Hex color WITHOUT the leading `#`, from the fixed eDesk palette
     /// (e.g. `F44336`, `2196F3`).
     #[serde(skip_serializing_if = "Option::is_none")]

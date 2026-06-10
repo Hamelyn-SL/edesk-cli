@@ -151,7 +151,7 @@ pub async fn run(ctx: &Context, cmd: OrderCmd) -> Result<()> {
         OrderCmd::Delete { id, yes } => {
             util::confirm(&format!("delete sales order {id}"), yes)?;
             let resp = client.delete_sales_order(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }

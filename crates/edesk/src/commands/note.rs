@@ -1,5 +1,4 @@
 use anyhow::{Context as _, Result};
-use base64::Engine;
 use clap::{Args, Subcommand};
 use edesk_client::api::{CreateOrderNoteRequest, NoteFile, UpdateOrderNoteRequest};
 
@@ -122,18 +121,19 @@ pub async fn run(ctx: &Context, cmd: NoteCmd) -> Result<()> {
                             .clone()
                             .unwrap_or_else(|| guess_mime(&name).to_string()),
                         name,
-                        base64: base64::engine::general_purpose::STANDARD.encode(&bytes),
-                        attachment_type: args.kind.clone(),
+                        bytes,
                     })
                 })
                 .collect::<Result<Vec<_>>>()?;
-            let resp = client.create_order_note_attachment(args.id, &files).await?;
+            let resp = client
+                .create_order_note_attachment(args.id, files, Some(&args.kind))
+                .await?;
             output::print_single(&ctx.global, resp.data)
         }
         NoteCmd::Delete { id, yes } => {
             util::confirm(&format!("delete order note {id}"), yes)?;
             let resp = client.delete_order_note(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }

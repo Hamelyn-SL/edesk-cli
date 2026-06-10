@@ -150,6 +150,29 @@ impl Client {
     pub async fn delete(&self, path: &str) -> Result<ApiResponse> {
         self.request(Method::DELETE, path, &[], None).await
     }
+
+    /// POST a multipart form (file uploads). Not retried.
+    pub async fn post_multipart(
+        &self,
+        path: &str,
+        form: reqwest::multipart::Form,
+    ) -> Result<ApiResponse> {
+        let url = format!("{}/{}", self.base_url, path.trim_start_matches('/'));
+        let resp = self
+            .http
+            .post(&url)
+            .bearer_auth(&self.token)
+            .multipart(form)
+            .send()
+            .await?;
+        let status = resp.status();
+        let text = resp.text().await?;
+        if status.is_success() {
+            serde_json::from_str(&text).map_err(Error::Decode)
+        } else {
+            Err(Error::from_response(status.as_u16(), &text))
+        }
+    }
 }
 
 fn backoff(attempt: u32) -> Duration {

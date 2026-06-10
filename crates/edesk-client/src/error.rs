@@ -95,12 +95,16 @@ impl Error {
                 let field_errors: Vec<FieldError> = map
                     .iter()
                     .filter_map(|(field, v)| {
-                        v.get("errorCode")
-                            .and_then(Value::as_i64)
-                            .map(|code| FieldError {
-                                field: field.clone(),
-                                code,
-                            })
+                        // The live API returns errorCode as a string ("4003")
+                        // even though the spec declares an integer.
+                        let code = v.get("errorCode").and_then(|c| {
+                            c.as_i64()
+                                .or_else(|| c.as_str().and_then(|s| s.parse().ok()))
+                        })?;
+                        Some(FieldError {
+                            field: field.clone(),
+                            code,
+                        })
                     })
                     .collect();
                 if !field_errors.is_empty() {

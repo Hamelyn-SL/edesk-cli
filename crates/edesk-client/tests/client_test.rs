@@ -89,11 +89,10 @@ async fn validation_error_exposes_field_codes() {
     });
 
     let req = edesk_client::api::TagRequest {
-        name: String::new(),
-        tag_group_id: 1,
+        name: Some(String::new()),
+        tag_group_id: Some(1),
         color: Some("magenta".into()),
-        icon: None,
-        active: None,
+        ..Default::default()
     };
     let err = client(&server).create_tag(&req).await.unwrap_err();
     match err {

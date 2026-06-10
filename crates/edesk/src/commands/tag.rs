@@ -1,7 +1,6 @@
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use clap::{Args, Subcommand};
 use edesk_client::api::TagRequest;
-use serde_json::Value;
 
 use super::util::{self, ListOpts};
 use crate::context::Context;
@@ -30,10 +29,7 @@ pub enum TagCmd {
     },
     /// Create a tag
     Create(CreateArgs),
-    /// Update a tag
-    ///
-    /// The API replaces the whole tag on update, so unspecified fields are
-    /// preserved by reading the current tag first.
+    /// Update a tag (only the given flags change; the rest is preserved)
     Update(UpdateArgs),
     /// Delete a tag
     Delete {
@@ -102,8 +98,8 @@ pub async fn run(ctx: &Context, cmd: TagCmd) -> Result<()> {
         }
         TagCmd::Create(args) => {
             let req = TagRequest {
-                name: args.name,
-                tag_group_id: args.group,
+                name: Some(args.name),
+                tag_group_id: Some(args.group),
                 color: args.color,
                 icon: args.icon,
                 active: args.inactive.then_some(false),
@@ -112,23 +108,14 @@ pub async fn run(ctx: &Context, cmd: TagCmd) -> Result<()> {
             output::print_single(&ctx.global, resp.data)
         }
         TagCmd::Update(args) => {
-            // Read-modify-write: the PUT is full-replace and requires
-            // name + tag_group_id even when only changing e.g. the color.
-            let current = client.get_tag(args.id).await?.data;
+            // The live API applies partial updates (and rejects re-sending an
+            // unchanged name as non-unique), so send only what was given.
             let req = TagRequest {
-                name: args
-                    .name
-                    .or_else(|| str_field(&current, "name"))
-                    .context("current tag has no name; pass --name")?,
-                tag_group_id: args
-                    .group
-                    .or_else(|| current.get("tag_group_id").and_then(Value::as_i64))
-                    .context("current tag has no group; pass --group")?,
-                color: args.color.or_else(|| str_field(&current, "color")),
-                icon: args.icon.or_else(|| str_field(&current, "icon")),
-                active: args
-                    .active
-                    .or_else(|| current.get("active").and_then(flexible_bool)),
+                name: args.name,
+                tag_group_id: args.group,
+                color: args.color,
+                icon: args.icon,
+                active: args.active,
             };
             let resp = client.update_tag(args.id, &req).await?;
             output::print_single(&ctx.global, resp.data)
@@ -136,23 +123,7 @@ pub async fn run(ctx: &Context, cmd: TagCmd) -> Result<()> {
         TagCmd::Delete { id, yes } => {
             util::confirm(&format!("delete tag {id}"), yes)?;
             let resp = client.delete_tag(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
-    }
-}
-
-fn str_field(value: &Value, key: &str) -> Option<String> {
-    value
-        .get(key)
-        .and_then(Value::as_str)
-        .map(ToString::to_string)
-}
-
-/// The API sometimes returns booleans as 0/1.
-fn flexible_bool(value: &Value) -> Option<bool> {
-    match value {
-        Value::Bool(b) => Some(*b),
-        Value::Number(n) => n.as_i64().map(|n| n != 0),
-        _ => None,
     }
 }

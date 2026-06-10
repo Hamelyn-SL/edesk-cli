@@ -17,18 +17,18 @@ pub struct UpdateOrderNoteRequest {
     pub text: String,
 }
 
-/// A file attached to an order note, sent inline as base64.
-#[derive(Debug, Clone, Serialize)]
+/// A file to attach to an order note.
+///
+/// Uploaded as `multipart/form-data` (`attachments[]` file parts plus an
+/// optional `attachmentType` field). The spec also documents a JSON variant
+/// with base64-encoded `files`, but the live API accepts it without ever
+/// materializing the attachment — verified empirically; only multipart works.
+#[derive(Debug, Clone)]
 pub struct NoteFile {
     pub name: String,
     /// MIME type, e.g. `image/png`.
-    #[serde(rename = "type")]
     pub mime_type: String,
-    /// Base64-encoded file content (not a URL).
-    pub base64: String,
-    /// `Other` or `Invoice`.
-    #[serde(rename = "attachmentType")]
-    pub attachment_type: String,
+    pub bytes: Vec<u8>,
 }
 
 impl Client {
@@ -64,15 +64,30 @@ impl Client {
         self.delete(&format!("/order-notes/{order_note_id}")).await
     }
 
-    /// Attach files to an order note (JSON variant: base64-encoded content).
-    /// Returns the updated order note.
+    /// Attach files to an order note via multipart upload. Returns the
+    /// updated order note. `attachment_type` is `Other` or `Invoice` and
+    /// applies to all files in the batch (an `attachmentType` per file is not
+    /// supported upstream — sending it as an array crashes the server).
     pub async fn create_order_note_attachment(
         &self,
         order_note_id: i64,
-        files: &[NoteFile],
+        files: Vec<NoteFile>,
+        attachment_type: Option<&str>,
     ) -> Result<ApiResponse> {
-        let body = serde_json::json!({ "files": files });
-        self.post(&format!("/order-notes/{order_note_id}/attachments"), &body)
+        use reqwest::multipart::{Form, Part};
+
+        let mut form = Form::new();
+        for file in files {
+            let part = Part::bytes(file.bytes)
+                .file_name(file.name)
+                .mime_str(&file.mime_type)
+                .map_err(crate::error::Error::Network)?;
+            form = form.part("attachments[]", part);
+        }
+        if let Some(kind) = attachment_type {
+            form = form.text("attachmentType", kind.to_string());
+        }
+        self.post_multipart(&format!("/order-notes/{order_note_id}/attachments"), form)
             .await
     }
 }

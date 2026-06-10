@@ -22,12 +22,34 @@ impl Paginator {
 /// The `{ "data": ..., "paginator": ... }` envelope every eDesk response uses.
 ///
 /// `data` is kept as raw JSON on purpose — see the crate-level docs.
+///
+/// Some live responses carry fields outside `data` that the spec doesn't
+/// document (e.g. deletes actually return top-level `{message, ok}` with no
+/// `data` at all); those are preserved in `extra`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ApiResponse {
     #[serde(default)]
     pub data: Value,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub paginator: Option<Paginator>,
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, Value>,
+}
+
+impl ApiResponse {
+    /// `data` merged with any undocumented top-level fields — what delete
+    /// confirmations should be read from.
+    pub fn merged(&self) -> Value {
+        match &self.data {
+            Value::Object(map) => {
+                let mut merged = self.extra.clone();
+                merged.extend(map.clone());
+                Value::Object(merged)
+            }
+            Value::Null if !self.extra.is_empty() => Value::Object(self.extra.clone()),
+            other => other.clone(),
+        }
+    }
 }
 
 /// Page selection for list endpoints.

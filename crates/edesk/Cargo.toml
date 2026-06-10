@@ -25,7 +25,6 @@ dialoguer = "0.12"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 etcetera = "0.10"
 toml_edit = "0.23"
-base64 = "0.22"
 jaq-core = "3.0.0"
 jaq-std = "3.0.0"
 jaq-json = { version = "2.0.0", features = ["serde"] }

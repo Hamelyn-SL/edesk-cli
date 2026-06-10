@@ -197,7 +197,7 @@ pub async fn run(ctx: &Context, cmd: TemplateCmd) -> Result<()> {
         TemplateCmd::Delete { id, yes } => {
             util::confirm(&format!("delete template {id}"), yes)?;
             let resp = client.delete_template(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }

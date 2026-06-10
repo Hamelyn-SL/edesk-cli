@@ -17,7 +17,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = "2"
 anyhow = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "gzip"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "gzip", "multipart"] }
 
 # The profile that 'dist' will build with
 [profile.dist]

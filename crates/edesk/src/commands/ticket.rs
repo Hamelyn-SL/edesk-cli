@@ -234,7 +234,7 @@ pub async fn run(ctx: &Context, cmd: TicketCmd) -> Result<()> {
         TicketCmd::Delete { id, yes } => {
             util::confirm(&format!("delete ticket {id}"), yes)?;
             let resp = client.delete_ticket(id).await?;
-            output::print_confirmation(&ctx.global, resp.data)
+            output::print_confirmation(&ctx.global, resp.merged())
         }
     }
 }
