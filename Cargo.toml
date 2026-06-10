@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["crates/edesk-client", "crates/edesk"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/Hamelyn-SL/edesk-cli"
+homepage = "https://github.com/Hamelyn-SL/edesk-cli"
+authors = ["Hamelyn <hola@hamelyn.com>"]
+rust-version = "1.85"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+anyhow = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "gzip"] }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

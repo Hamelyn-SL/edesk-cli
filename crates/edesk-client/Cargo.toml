@@ -1,0 +1,23 @@
+[package]
+name = "edesk-client"
+description = "Rust client for the eDesk REST API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+keywords = ["edesk", "helpdesk", "api-client"]
+categories = ["api-bindings"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+tokio = { workspace = true, features = ["time"] }
+
+[dev-dependencies]
+httpmock = "0.7"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
