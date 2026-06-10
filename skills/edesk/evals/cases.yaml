@@ -1,0 +1,68 @@
+# Functional eval for the edesk skill.
+#
+# Method: an agent receives ONLY the SKILL.md content plus one task below and
+# must answer with the command(s)/approach it would run. A judge scores the
+# answer against the rubric. Run via skills/edesk/evals/README.md.
+cases:
+  - id: list-open-today
+    task: "List the IDs of open tickets updated today, as machine-readable output."
+    rubric: >
+      Must use `edesk ticket list` with --status Open, an --updated-after date,
+      and --json or --jq to emit ids (e.g. --jq '.[].id'). Plain table output fails.
+
+  - id: internal-note
+    task: "Add an internal note 'refund approved' to ticket 123 that the customer must NOT see."
+    rubric: >
+      Must use `edesk message create --ticket 123 --type Note --body ...`.
+      Using type Message, --send, or --direction Outgoing fails (customer-visible).
+
+  - id: scripted-delete
+    task: "Delete tag 55 from inside a cron script."
+    rubric: >
+      Must include --yes (non-TTY requires it) AND mention confirming with the
+      user / caution before destructive action.
+
+  - id: order-tracking-two-step
+    task: "Find the eDesk sales order for Amazon order 406-1195395-1150767 and add tracking link https://t.example/X for carrier DHL."
+    rubric: >
+      Must resolve the internal id via `edesk order list --seller-order ... --jq '.[0].id'`
+      (or equivalent), then `edesk tracking add <id> --link ... --carrier DHL`.
+      Using the marketplace order id directly as the tracking path param fails.
+
+  - id: rate-limit-429
+    task: "Your bulk script started getting HTTP 429 'Out of quota' from eDesk. What are the limits and what do you do?"
+    rubric: >
+      Must state 60 requests/minute and ~2 req/s restoration, that the CLI
+      retries GET/PUT/DELETE but NOT POST, and recommend slowing down/backoff
+      (and optionally contacting support to raise the limit).
+
+  - id: attach-invoice
+    task: "Upload the local file invoice.pdf to order note 999, marked as an invoice."
+    rubric: >
+      Must use `edesk note attach 999 --file invoice.pdf --kind Invoice`.
+
+  - id: create-sales-order
+    task: "Create a sales order in eDesk for channel 372698."
+    rubric: >
+      Must use `edesk order create --body/--body-file` with JSON and mention the
+      required fields including ship_to (name, line_1, city, country, postcode),
+      seller_order_id uniqueness, order_items, and contact/contact_id.
+
+  - id: curl-fallback
+    task: "You are in a sandbox without the edesk binary. Fetch page 2 of open tickets, 50 per page, using the API directly."
+    rubric: >
+      Must curl https://api.edesk.com/v1/tickets with Authorization: Bearer
+      header and query params filter_status_equals=Open, page=2, itemsPerPage=50.
+      Hardcoding a literal token fails; must use an env var/placeholder.
+
+  - id: deleted-ticket-archived
+    task: "A user says: 'I deleted ticket 777 with the CLI but it still shows up with status Archived. Is that a bug?'"
+    rubric: >
+      Must explain that the eDesk API archives tickets on delete instead of
+      removing them — expected upstream behavior, not a CLI bug.
+
+  - id: tag-partial-update
+    task: "Change the color of tag 7 to red (F44336) without touching anything else."
+    rubric: >
+      Must use `edesk tag update 7 --color F44336` only. Re-sending --name with
+      the unchanged name fails (the API rejects it as non-unique).

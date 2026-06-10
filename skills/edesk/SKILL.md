@@ -1,6 +1,7 @@
 ---
 name: edesk
-description: Work with the eDesk helpdesk API via the `edesk` CLI — list/view/create/update/delete tickets, messages, sales orders, tracking links, order notes, tags, templates; search contacts; list channels/users. Use whenever the user asks about eDesk tickets, customer support queries, eDesk sales orders, or eDesk automation.
+version: 1.1.1
+description: "[v1.1.1] Work with the eDesk helpdesk API via the `edesk` CLI — list/view/create/update/delete tickets, messages, sales orders, tracking links, order notes, tags, templates; search contacts; list channels/users. Use whenever the user asks about eDesk tickets, customer support queries, eDesk sales orders, or eDesk automation."
 ---
 
 # eDesk CLI
@@ -18,6 +19,23 @@ description: Work with the eDesk helpdesk API via the `edesk` CLI — list/view/
 - Exit codes: 0 ok, 1 failure, 2 usage error, 4 auth problem (`edesk auth login`).
 - Lists default to 30 items; use `--all` (every page), `--limit N`, or `--page N --per-page M`.
 - `edesk <noun> --help` and `edesk <noun> <verb> --help` document every flag.
+
+## Rate limits
+
+The API allows **60 requests/minute per client**, restoring at **2 requests per
+second** after that. Exceeding it returns HTTP 429:
+`{"error": {"httpCode": 429, "message": "Too many requests", "details": "Out of quota"}}`.
+
+- The CLI already retries GET/PUT/DELETE on 429 with exponential backoff
+  (up to 3 attempts); POSTs are NOT retried — on a 429'd create, wait ≥1s and
+  re-issue it yourself.
+- For bulk work, prefer one `--all` (100-item pages ≈ few requests) over many
+  small calls, and avoid tight loops of `view`/`create`: sleep ~500ms between
+  requests to stay inside the restoration rate.
+- `message list --ticket` issues one request per message — on tickets with
+  many messages this can eat quota quickly.
+- Sustained 429s on low volume → the account's limit may need raising via
+  eDesk support.
 
 ## Command map
 
@@ -68,6 +86,9 @@ edesk tag-group list --json
 edesk tag create --name "VIP" --group 644646 --color 2196F3 --icon star
 edesk tag update <id> --color F44336        # partial: only what you pass changes
 
+# Attach a local file to an order note (--file is a flag, not positional)
+edesk note attach 999 --file invoice.pdf --kind Invoice
+
 # Custom fields on a ticket
 edesk ticket update-data 12345 -f "Order Status=Shipped"
 
@@ -91,7 +112,8 @@ Endpoints: `/tickets[/{id}][/data]`, `/messages[/{id}]`, `/sales-orders[/{id}]`,
 `/sales-orders-tracking-links/{orderId}`, `/order-notes[/{id}][/attachments]`,
 `/tags[/{id}]`, `/tag-groups`, `/templates[/{id}]`, `/contacts`, `/channels`,
 `/users`, `/whoami`. Full reference: https://developers.edesk.com/ — but trust
-the quirks below over the spec when they conflict.
+the quirks below over the spec when they conflict. The 60 req/min rate limit
+applies here too: honor 429 by sleeping ≥1s before retrying.
 
 ## Quirks worth knowing
 
@@ -103,3 +125,11 @@ the quirks below over the spec when they conflict.
   (search index lag); `order view <id>` is immediate.
 - There is no list-messages endpoint upstream; `message list --ticket` fans out
   over the ticket's `messages_ids`.
+
+## Changelog
+
+- **1.1.1** (2026-06-10): explicit `note attach --file` recipe (eval found agents
+  guessed a positional file argument).
+- **1.1.0** (2026-06-10): rate-limit section (60 req/min, 2 req/s restore, 429
+  handling), curl fallback for sandboxes without the binary, versioned frontmatter.
+- **1.0.0** (2026-06-10): initial release alongside edesk-cli v0.1.0.
