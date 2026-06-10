@@ -22,7 +22,8 @@ clap_complete = "4"
 comfy-table = "7"
 owo-colors = "4"
 dialoguer = "0.12"
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+# async-secret-service (zbus) is pure Rust — no libdbus system dependency on Linux
+keyring = { version = "3", features = ["apple-native", "windows-native", "async-secret-service", "crypto-rust", "tokio"] }
 etcetera = "0.10"
 toml_edit = "0.23"
 jaq-core = "3.0.0"
