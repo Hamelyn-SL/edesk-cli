@@ -15,18 +15,38 @@ const BASE_BACKOFF: Duration = Duration::from_millis(400);
 /// Authenticated eDesk API client.
 ///
 /// Cheap to clone; the underlying HTTP connection pool is shared.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Client {
     http: reqwest::Client,
     base_url: String,
     token: String,
 }
 
-#[derive(Debug, Default)]
+// Hand-written so the bearer token can never leak through `{:?}` formatting.
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client")
+            .field("base_url", &self.base_url)
+            .field("token", &"[REDACTED]")
+            .finish_non_exhaustive()
+    }
+}
+
+#[derive(Default)]
 pub struct ClientBuilder {
     token: Option<String>,
     base_url: Option<String>,
     timeout: Option<Duration>,
+}
+
+impl std::fmt::Debug for ClientBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ClientBuilder")
+            .field("base_url", &self.base_url)
+            .field("timeout", &self.timeout)
+            .field("token", &self.token.as_deref().map(|_| "[REDACTED]"))
+            .finish()
+    }
 }
 
 impl ClientBuilder {

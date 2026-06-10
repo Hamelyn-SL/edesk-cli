@@ -317,3 +317,54 @@ fn help_shows_subcommands() {
         .stdout(predicate::str::contains("auth"))
         .stdout(predicate::str::contains("api"));
 }
+
+#[test]
+fn global_fields_flag_works_alongside_custom_field_flag() {
+    // Regression: the custom-field flag's arg ID used to collide with the
+    // global --fields, making clap reject --fields on ticket subcommands.
+    let server = MockServer::start();
+    server.mock(|when, then| {
+        when.method(PUT).path("/tickets/7/data");
+        then.status(200)
+            .json_body(json!({"data": {"id": 7, "subject": "s", "status": "Open"}}));
+    });
+
+    let output = edesk(&server)
+        .args([
+            "ticket",
+            "update-data",
+            "7",
+            "-f",
+            "a=b",
+            "--json",
+            "--fields",
+            "id,status",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let parsed: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(parsed, json!({"id": 7, "status": "Open"}));
+}
+
+#[test]
+fn api_command_honors_fields_projection() {
+    let server = MockServer::start();
+    server.mock(|when, then| {
+        when.method(GET).path("/whoami");
+        then.status(200)
+            .json_body(json!({"data": {"user": {"id": 1, "email": "a@b.c"}}}));
+    });
+
+    let output = edesk(&server)
+        .args(["api", "/whoami", "--fields", "data.user.email"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let parsed: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(parsed, json!({"data.user.email": "a@b.c"}));
+}

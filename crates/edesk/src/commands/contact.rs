@@ -36,8 +36,8 @@ pub struct ListArgs {
     /// Filter by phone number
     #[arg(long)]
     pub phone: Option<String>,
-    /// Filter by consumer (contact) ID
-    #[arg(long, value_name = "ID")]
+    /// Filter by consumer (contact) ID (the upstream API parameter name)
+    #[arg(long, visible_alias = "contact-id", value_name = "ID")]
     pub consumer_id: Option<i64>,
 }
 

@@ -66,28 +66,39 @@ pub async fn run(ctx: &Context, args: ApiArgs) -> Result<()> {
     let path = normalize_path(&args.path);
 
     if args.paginate && method == Method::GET {
+        // Same ceiling as util::paginate, in case an endpoint ignores the
+        // `page` param and keeps reporting more pages forever.
+        const MAX_PAGES: u64 = 10_000;
         let mut items: Vec<Value> = Vec::new();
-        let mut page = 1u64;
-        loop {
+        let mut pages_exhausted = true;
+        for page in 1..=MAX_PAGES {
             let mut q = query.clone();
             q.push(("page".into(), page.to_string()));
             let resp = client.request(method.clone(), &path, &q, None).await?;
             match resp.data {
                 Value::Array(batch) => {
                     if batch.is_empty() {
+                        pages_exhausted = true;
                         break;
                     }
                     items.extend(batch);
                 }
                 other => {
                     items.push(other);
+                    pages_exhausted = true;
                     break;
                 }
             }
             match resp.paginator {
-                Some(p) if p.has_more() => page += 1,
-                _ => break,
+                Some(p) if p.has_more() => pages_exhausted = false,
+                _ => {
+                    pages_exhausted = true;
+                    break;
+                }
             }
+        }
+        if !pages_exhausted && !ctx.global.quiet {
+            eprintln!("warning: stopped after {MAX_PAGES} pages with more reported");
         }
         return finish(ctx, Value::Array(items));
     }
@@ -109,7 +120,7 @@ fn finish(ctx: &Context, value: Value) -> Result<()> {
         }
         return Ok(());
     }
-    output::print_json(&value)
+    output::print_json(&output::project_fields(value, ctx.global.fields.as_deref()))
 }
 
 fn normalize_path(path: &str) -> String {

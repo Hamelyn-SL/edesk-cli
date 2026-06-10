@@ -36,8 +36,13 @@ pub enum TicketCmd {
         /// Ticket ID
         id: i64,
         /// Custom field as NAME=VALUE (repeatable)
-        #[arg(short, long = "field", value_name = "NAME=VALUE", required = true)]
-        fields: Vec<String>,
+        #[arg(
+            short = 'f',
+            long = "field",
+            value_name = "NAME=VALUE",
+            required = true
+        )]
+        custom_fields: Vec<String>,
     },
     /// Delete a ticket
     Delete {
@@ -106,7 +111,7 @@ pub struct CreateArgs {
     #[arg(long, default_value = "Open")]
     pub status: String,
     /// Existing contact ID
-    #[arg(long, conflicts_with = "contact_email")]
+    #[arg(long, visible_alias = "contact", conflicts_with = "contact_email")]
     pub contact_id: Option<i64>,
     /// Inline contact email (creates/links the contact)
     #[arg(long)]
@@ -121,8 +126,8 @@ pub struct CreateArgs {
     #[arg(long, value_name = "DATETIME")]
     pub created_at: Option<String>,
     /// Custom field as NAME=VALUE (repeatable)
-    #[arg(short, long = "field", value_name = "NAME=VALUE")]
-    pub fields: Vec<String>,
+    #[arg(short = 'f', long = "field", value_name = "NAME=VALUE")]
+    pub custom_fields: Vec<String>,
 }
 
 #[derive(Debug, Args)]
@@ -139,7 +144,7 @@ pub struct UpdateArgs {
     #[arg(long)]
     pub channel: Option<i64>,
     /// Re-link to contact ID
-    #[arg(long)]
+    #[arg(long, visible_alias = "contact")]
     pub contact_id: Option<i64>,
     /// Link to a sales order ID
     #[arg(long = "sales-order")]
@@ -151,8 +156,8 @@ pub struct UpdateArgs {
     #[arg(long = "tag", value_name = "TAG_ID")]
     pub tags: Vec<i64>,
     /// Custom field as NAME=VALUE (repeatable)
-    #[arg(short, long = "field", value_name = "NAME=VALUE")]
-    pub fields: Vec<String>,
+    #[arg(short = 'f', long = "field", value_name = "NAME=VALUE")]
+    pub custom_fields: Vec<String>,
 }
 
 pub async fn run(ctx: &Context, cmd: TicketCmd) -> Result<()> {
@@ -201,7 +206,7 @@ pub async fn run(ctx: &Context, cmd: TicketCmd) -> Result<()> {
                 sales_order_id: args.sales_order,
                 created_at: args.created_at,
                 full_response: None,
-                custom_fields: optional_fields(&args.fields)?,
+                custom_fields: optional_fields(&args.custom_fields)?,
                 contact_id: args.contact_id,
                 contact,
             };
@@ -214,7 +219,7 @@ pub async fn run(ctx: &Context, cmd: TicketCmd) -> Result<()> {
                 channel_id: args.channel,
                 status: args.status,
                 sales_order_id: args.sales_order,
-                custom_fields: optional_fields(&args.fields)?,
+                custom_fields: optional_fields(&args.custom_fields)?,
                 contact_id: args.contact_id,
                 tag_ids: if args.tags.is_empty() {
                     None
@@ -226,8 +231,8 @@ pub async fn run(ctx: &Context, cmd: TicketCmd) -> Result<()> {
             let resp = client.update_ticket(args.id, &req).await?;
             output::print_single(&ctx.global, resp.data)
         }
-        TicketCmd::UpdateData { id, fields } => {
-            let custom_fields = util::parse_custom_fields(&fields)?;
+        TicketCmd::UpdateData { id, custom_fields } => {
+            let custom_fields = util::parse_custom_fields(&custom_fields)?;
             let resp = client.update_ticket_data(id, &custom_fields).await?;
             output::print_single(&ctx.global, resp.data)
         }

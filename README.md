@@ -24,7 +24,7 @@ validated against the live API.
 
 ## Installation
 
-### macOS / Linux (shell installer)
+### macOS (shell installer)
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/Hamelyn-SL/edesk-cli/releases/latest/download/edesk-installer.sh | sh

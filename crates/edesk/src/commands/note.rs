@@ -29,7 +29,7 @@ pub enum NoteCmd {
     /// Create an order note
     Create {
         /// Sales order ID the note belongs to
-        #[arg(long)]
+        #[arg(long, visible_alias = "sales-order")]
         order: i64,
         /// Note text
         #[arg(long)]
@@ -43,10 +43,10 @@ pub enum NoteCmd {
         #[arg(long)]
         text: String,
         /// Move the note to another sales order
-        #[arg(long)]
+        #[arg(long, visible_alias = "sales-order")]
         order: Option<i64>,
     },
-    /// Attach local files to an order note (uploaded as base64)
+    /// Attach local files to an order note (multipart upload)
     Attach(AttachArgs),
     /// Delete an order note
     Delete {

@@ -20,7 +20,7 @@ pub struct Cli {
     pub global: GlobalArgs,
 }
 
-#[derive(Debug, Clone, Args)]
+#[derive(Clone, Args)]
 pub struct GlobalArgs {
     /// API token (overrides stored credentials)
     #[arg(long, global = true, env = "EDESK_TOKEN", hide_env_values = true)]
@@ -45,6 +45,20 @@ pub struct GlobalArgs {
     /// Suppress informational messages on stderr
     #[arg(short, long, global = true)]
     pub quiet: bool,
+}
+
+// Hand-written so the token can never leak through `{:?}` formatting.
+impl std::fmt::Debug for GlobalArgs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GlobalArgs")
+            .field("token", &self.token.as_deref().map(|_| "[REDACTED]"))
+            .field("base_url", &self.base_url)
+            .field("json", &self.json)
+            .field("jq", &self.jq)
+            .field("fields", &self.fields)
+            .field("quiet", &self.quiet)
+            .finish()
+    }
 }
 
 #[derive(Debug, Subcommand)]

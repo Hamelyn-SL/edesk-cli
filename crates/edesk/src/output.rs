@@ -86,18 +86,24 @@ pub fn print_single(global: &GlobalArgs, value: Value) -> Result<()> {
 
     match &value {
         Value::Object(map) => {
-            let fields: Option<&[String]> = global.fields.as_deref();
             let mut table = Table::new();
             table
                 .load_preset(presets::NOTHING)
                 .set_content_arrangement(ContentArrangement::Dynamic);
-            for (key, val) in map {
-                if let Some(fields) = fields {
-                    if !fields.iter().any(|f| f == key) {
-                        continue;
+            match global.fields.as_deref() {
+                // Selected fields render in the order given, with dot-path
+                // support (`user.name`).
+                Some(fields) => {
+                    for field in fields {
+                        let val = lookup(&value, field).cloned().unwrap_or(Value::Null);
+                        table.add_row(vec![Cell::new(field), Cell::new(display_value(&val))]);
                     }
                 }
-                table.add_row(vec![Cell::new(key), Cell::new(display_value(val))]);
+                None => {
+                    for (key, val) in map {
+                        table.add_row(vec![Cell::new(key), Cell::new(display_value(val))]);
+                    }
+                }
             }
             println!("{table}");
         }
@@ -181,6 +187,12 @@ fn select_columns(columns: &[Column], fields: Option<&[String]>) -> Vec<OwnedCol
 struct OwnedColumn {
     header: String,
     path: String,
+}
+
+/// Public variant of [`project`] for commands that render their own JSON
+/// (e.g. `edesk api`).
+pub fn project_fields(value: Value, fields: Option<&[String]>) -> Value {
+    project(value, fields)
 }
 
 /// Project `--fields` into JSON output: keeps only the listed top-level keys
