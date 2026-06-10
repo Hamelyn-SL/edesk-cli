@@ -75,6 +75,24 @@ edesk ticket update-data 12345 -f "Order Status=Shipped"
 edesk api /tickets -F filter_status_equals=Open -F itemsPerPage=50 --jq '.data'
 ```
 
+## If the `edesk` binary is unavailable
+
+In sandboxes without the CLI (e.g. claude.ai), call the API directly with curl.
+Ask the user for the token (or read `$EDESK_TOKEN`) — never hardcode it.
+
+```bash
+# Base URL https://api.edesk.com/v1, bearer auth, {data, paginator} envelope
+curl -s https://api.edesk.com/v1/whoami -H "Authorization: Bearer $EDESK_TOKEN"
+curl -s "https://api.edesk.com/v1/tickets?filter_status_equals=Open&page=1&itemsPerPage=50" \
+  -H "Authorization: Bearer $EDESK_TOKEN"
+```
+
+Endpoints: `/tickets[/{id}][/data]`, `/messages[/{id}]`, `/sales-orders[/{id}]`,
+`/sales-orders-tracking-links/{orderId}`, `/order-notes[/{id}][/attachments]`,
+`/tags[/{id}]`, `/tag-groups`, `/templates[/{id}]`, `/contacts`, `/channels`,
+`/users`, `/whoami`. Full reference: https://developers.edesk.com/ — but trust
+the quirks below over the spec when they conflict.
+
 ## Quirks worth knowing
 
 - Ticket "delete" archives the ticket (status `Archived`); it does not remove it.
