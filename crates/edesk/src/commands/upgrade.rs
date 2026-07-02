@@ -37,8 +37,12 @@ pub async fn run(args: UpgradeArgs) -> Result<()> {
     eprintln!("Checking {RELEASES_URL} …");
     match updater.run().await.context("update failed")? {
         Some(result) => {
+            let from = result
+                .old_version
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| CURRENT.to_string());
             eprintln!(
-                "✓ Upgraded edesk {CURRENT} → {} (installed in {})",
+                "✓ Upgraded edesk {from} → {} (installed in {})",
                 result.new_version, result.install_prefix
             );
         }
