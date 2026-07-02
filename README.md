@@ -54,6 +54,25 @@ macOS (Apple Silicon + Intel) and Windows x64.
 cargo install --git https://github.com/Hamelyn-SL/edesk-cli edesk
 ```
 
+## Updating
+
+```sh
+edesk upgrade            # self-update to the latest release
+edesk upgrade --check    # only check whether a newer release exists
+```
+
+`edesk upgrade` works for installs done via the shell/PowerShell installer.
+Homebrew installs update through `brew upgrade edesk` (the formula is
+refreshed automatically on every release), and `edesk upgrade` will tell you
+so instead of touching a brew-managed binary.
+
+When a newer release exists, edesk also prints a one-line notice after a
+successful command (at most one check per day, only on interactive
+terminals). Disable it with `EDESK_NO_UPDATE_CHECK=1`.
+
+These install/update instructions are also available offline via
+`edesk --help`.
+
 ## Getting started
 
 Generate an API token at [dashboard.edesk.com/api-token](https://dashboard.edesk.com/api-token), then:

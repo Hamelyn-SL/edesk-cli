@@ -1,7 +1,7 @@
 ---
 name: edesk
-version: 1.1.1
-description: "[v1.1.1] Work with the eDesk helpdesk API via the `edesk` CLI — list/view/create/update/delete tickets, messages, sales orders, tracking links, order notes, tags, templates; search contacts; list channels/users. Use whenever the user asks about eDesk tickets, customer support queries, eDesk sales orders, or eDesk automation."
+version: 1.2.0
+description: "[v1.2.0] Work with the eDesk helpdesk API via the `edesk` CLI — list/view/create/update/delete tickets, messages, sales orders, tracking links, order notes, tags, templates; search contacts; list channels/users. Use whenever the user asks about eDesk tickets, customer support queries, eDesk sales orders, or eDesk automation."
 ---
 
 # eDesk CLI
@@ -19,6 +19,8 @@ description: "[v1.1.1] Work with the eDesk helpdesk API via the `edesk` CLI — 
 - Exit codes: 0 ok, 1 failure, 2 usage error, 4 auth problem (`edesk auth login`).
 - Lists default to 30 items; use `--all` (every page), `--limit N`, or `--page N --per-page M`.
 - `edesk <noun> --help` and `edesk <noun> <verb> --help` document every flag.
+- Install/update instructions live in `edesk --help`; `edesk upgrade` self-updates
+  (installer-based installs) and `edesk upgrade --check` just reports.
 
 ## Rate limits
 
@@ -127,6 +129,9 @@ applies here too: honor 429 by sleeping ≥1s before retrying.
   over the ticket's `messages_ids`.
 
 ## Changelog
+
+- **1.2.0** (2026-06-11): `edesk upgrade` self-update + install/update help note
+  (ships with edesk-cli v0.2.0).
 
 - **1.1.1** (2026-06-10): explicit `note attach --file` recipe (eval found agents
   guessed a positional file argument).

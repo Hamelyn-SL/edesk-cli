@@ -4,6 +4,7 @@ mod config;
 mod context;
 mod jq;
 mod output;
+mod update_check;
 
 use std::process::ExitCode;
 
@@ -17,9 +18,21 @@ const EXIT_AUTH: u8 = 4;
 #[tokio::main]
 async fn main() -> ExitCode {
     let cli = cli::Cli::parse();
+    let quiet = cli.global.quiet;
+    // Skip the passive version notice where it would be noise: on the
+    // upgrade command itself and on completion scripts.
+    let wants_notice = !matches!(
+        cli.command,
+        cli::Command::Upgrade(_) | cli::Command::Completion { .. }
+    );
 
     match commands::run(cli).await {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(()) => {
+            if wants_notice {
+                update_check::maybe_notice(quiet).await;
+            }
+            ExitCode::SUCCESS
+        }
         Err(err) => {
             if is_broken_pipe(&err) {
                 return ExitCode::SUCCESS;

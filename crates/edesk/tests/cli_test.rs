@@ -368,3 +368,54 @@ fn api_command_honors_fields_projection() {
     let parsed: serde_json::Value = serde_json::from_slice(&output).unwrap();
     assert_eq!(parsed, json!({"data.user.email": "a@b.c"}));
 }
+
+#[test]
+fn upgrade_check_reports_newer_release() {
+    let server = MockServer::start();
+    server.mock(|when, then| {
+        when.method(GET)
+            .path("/repos/Hamelyn-SL/edesk-cli/releases/latest");
+        then.status(200).json_body(json!({"tag_name": "v99.0.0"}));
+    });
+
+    Command::cargo_bin("edesk")
+        .unwrap()
+        .env("EDESK_UPDATE_CHECK_URL", server.base_url())
+        .args(["upgrade", "--check"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("99.0.0"));
+}
+
+#[test]
+fn upgrade_check_reports_up_to_date() {
+    let server = MockServer::start();
+    server.mock(|when, then| {
+        when.method(GET)
+            .path("/repos/Hamelyn-SL/edesk-cli/releases/latest");
+        then.status(200)
+            .json_body(json!({"tag_name": format!("v{}", env!("CARGO_PKG_VERSION"))}));
+    });
+
+    Command::cargo_bin("edesk")
+        .unwrap()
+        .env("EDESK_UPDATE_CHECK_URL", server.base_url())
+        .args(["upgrade", "--check"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("up to date"));
+}
+
+#[test]
+fn help_includes_install_instructions() {
+    Command::cargo_bin("edesk")
+        .unwrap()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Installation & updates"))
+        .stdout(predicate::str::contains(
+            "brew install Hamelyn-SL/tap/edesk",
+        ))
+        .stdout(predicate::str::contains("edesk upgrade"));
+}

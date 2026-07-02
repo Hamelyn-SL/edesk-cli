@@ -12,7 +12,7 @@ keywords = ["edesk", "helpdesk", "cli"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-edesk-client = { path = "../edesk-client", version = "0.1.1" }
+edesk-client = { path = "../edesk-client", version = "0.2.0" }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -29,6 +29,9 @@ toml_edit = "0.23"
 jaq-core = "3.0.0"
 jaq-std = "3.0.0"
 jaq-json = { version = "2.0.0", features = ["serde"] }
+# Self-update for cargo-dist installer installs (async API; `blocking` would
+# panic inside our tokio runtime)
+axoupdater = { version = "0.10.0", default-features = false, features = ["github_releases"] }
 
 [dev-dependencies]
 assert_cmd = "2"

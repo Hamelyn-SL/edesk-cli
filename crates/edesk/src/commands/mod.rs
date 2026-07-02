@@ -11,6 +11,7 @@ pub mod tag_group;
 pub mod template;
 pub mod ticket;
 pub mod tracking;
+pub mod upgrade;
 pub mod user;
 pub mod util;
 pub mod whoami;
@@ -38,6 +39,7 @@ pub async fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Auth(cmd) => auth::run(&ctx, cmd).await,
         Command::Config(cmd) => config_cmd::run(&ctx, cmd),
         Command::Api(args) => api::run(&ctx, args).await,
+        Command::Upgrade(args) => upgrade::run(args).await,
         Command::Completion { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "edesk", &mut std::io::stdout());

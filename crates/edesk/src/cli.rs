@@ -2,6 +2,14 @@ use clap::{Args, Parser, Subcommand};
 
 use crate::commands;
 
+const INSTALL_HELP: &str = "Installation & updates:
+  macOS (Homebrew):     brew install Hamelyn-SL/tap/edesk    (update: brew upgrade edesk)
+  macOS (installer):    curl -LsSf https://github.com/Hamelyn-SL/edesk-cli/releases/latest/download/edesk-installer.sh | sh
+  Windows (PowerShell): powershell -ExecutionPolicy Bypass -c \"irm https://github.com/Hamelyn-SL/edesk-cli/releases/latest/download/edesk-installer.ps1 | iex\"
+  Self-update:          edesk upgrade    (check only: edesk upgrade --check)
+
+  Binaries and checksums: https://github.com/Hamelyn-SL/edesk-cli/releases";
+
 #[derive(Debug, Parser)]
 #[command(
     name = "edesk",
@@ -10,6 +18,8 @@ use crate::commands;
     long_about = "Work with eDesk tickets, messages, sales orders, tags, templates and more \
                   from the command line.\n\nAuthenticate once with `edesk auth login`, then try \
                   `edesk ticket list` or `edesk whoami`.",
+    after_long_help = INSTALL_HELP,
+    after_help = INSTALL_HELP,
     propagate_version = true
 )]
 pub struct Cli {
@@ -120,6 +130,9 @@ pub enum Command {
 
     /// Make a raw, authenticated eDesk API request
     Api(commands::api::ApiArgs),
+
+    /// Update edesk to the latest release
+    Upgrade(commands::upgrade::UpgradeArgs),
 
     /// Generate shell completion scripts
     Completion {
